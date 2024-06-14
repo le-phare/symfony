@@ -36,6 +36,7 @@ class MultiplierRetryStrategy implements RetryStrategyInterface
     private int $delayMilliseconds;
     private float $multiplier;
     private int $maxDelayMilliseconds;
+    private bool $retryToOriginalExchange;
 
     /**
      * @param int   $maxRetries           The maximum number of times to retry
@@ -43,7 +44,7 @@ class MultiplierRetryStrategy implements RetryStrategyInterface
      * @param float $multiplier           Multiplier to apply to the delay each time a retry occurs
      * @param int   $maxDelayMilliseconds Maximum delay to allow (0 means no maximum)
      */
-    public function __construct(int $maxRetries = 3, int $delayMilliseconds = 1000, float $multiplier = 1, int $maxDelayMilliseconds = 0)
+    public function __construct(int $maxRetries = 3, int $delayMilliseconds = 1000, float $multiplier = 1, int $maxDelayMilliseconds = 0, bool $retryToOriginalExchange = false)
     {
         $this->maxRetries = $maxRetries;
 
@@ -61,6 +62,7 @@ class MultiplierRetryStrategy implements RetryStrategyInterface
             throw new InvalidArgumentException(sprintf('Max delay must be greater than or equal to zero: "%s" given.', $maxDelayMilliseconds));
         }
         $this->maxDelayMilliseconds = $maxDelayMilliseconds;
+        $this->retryToOriginalExchange = $retryToOriginalExchange;
     }
 
     /**
@@ -87,5 +89,10 @@ class MultiplierRetryStrategy implements RetryStrategyInterface
         }
 
         return (int) ceil($delay);
+    }
+
+    public function isRetryToOriginalExchange(): bool
+    {
+        return $this->retryToOriginalExchange;
     }
 }

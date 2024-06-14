@@ -1690,7 +1690,7 @@ class Configuration implements ConfigurationInterface
                                         ->addDefaultsIfNotSet()
                                         ->beforeNormalization()
                                             ->always(function ($v) {
-                                                if (isset($v['service']) && (isset($v['max_retries']) || isset($v['delay']) || isset($v['multiplier']) || isset($v['max_delay']))) {
+                                                if (isset($v['service']) && (isset($v['max_retries']) || isset($v['delay']) || isset($v['multiplier']) || isset($v['max_delay']) || isset($v['retry_to_original_exchange']))) {
                                                     throw new \InvalidArgumentException('The "service" cannot be used along with the other "retry_strategy" options.');
                                                 }
 
@@ -1703,6 +1703,8 @@ class Configuration implements ConfigurationInterface
                                             ->integerNode('delay')->defaultValue(1000)->min(0)->info('Time in ms to delay (or the initial value when multiplier is used)')->end()
                                             ->floatNode('multiplier')->defaultValue(2)->min(1)->info('If greater than 1, delay will grow exponentially for each retry: this delay = (delay * (multiple ^ retries))')->end()
                                             ->integerNode('max_delay')->defaultValue(0)->min(0)->info('Max time in ms that a retry should ever be delayed (0 = infinite)')->end()
+                                            // TODO: retry_strategy is transport agnostic but this option is AMQP specific
+                                            ->booleanNode('retry_to_original_exchange')->defaultValue(false)->info('Use message initial exchange as dead letter exchange for retry/delay queue')->end()
                                         ->end()
                                     ->end()
                                     ->scalarNode('rate_limiter')

@@ -23,6 +23,7 @@ final class AmqpStamp implements NonSendableStampInterface
     private int $flags;
     private array $attributes;
     private bool $isRetryAttempt = false;
+    private ?string $deadLetterExchange = null;
 
     public function __construct(?string $routingKey = null, int $flags = \AMQP_NOPARAM, array $attributes = [])
     {
@@ -46,8 +47,10 @@ final class AmqpStamp implements NonSendableStampInterface
         return $this->attributes;
     }
 
-    public static function createFromAmqpEnvelope(\AMQPEnvelope $amqpEnvelope, ?self $previousStamp = null, ?string $retryRoutingKey = null): self
+    public static function createFromAmqpEnvelope(\AMQPEnvelope $amqpEnvelope, ?self $previousStamp = null, ?string $retryRoutingKey = null, ?string $deadLetterExchange = null): self
     {
+        // TODO: clean this dump
+        // dump('createFromAmqpEnvelope retryRk', $retryRoutingKey);
         $attr = $previousStamp->attributes ?? [];
 
         $attr['headers'] ??= $amqpEnvelope->getHeaders();
@@ -70,6 +73,7 @@ final class AmqpStamp implements NonSendableStampInterface
             $stamp = new self($retryRoutingKey, $previousStamp->flags ?? \AMQP_NOPARAM, $attr);
             $stamp->isRetryAttempt = true;
         }
+        $stamp->deadLetterExchange = $deadLetterExchange;
 
         return $stamp;
     }
@@ -77,6 +81,14 @@ final class AmqpStamp implements NonSendableStampInterface
     public function isRetryAttempt(): bool
     {
         return $this->isRetryAttempt;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getDeadLetterExchange(): ?string
+    {
+        return $this->deadLetterExchange;
     }
 
     public static function createWithAttributes(array $attributes, ?self $previousStamp = null): self

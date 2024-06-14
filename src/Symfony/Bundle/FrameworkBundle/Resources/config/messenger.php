@@ -161,6 +161,7 @@ return static function (ContainerConfigurator $container) {
                 abstract_arg('delay ms'),
                 abstract_arg('multiplier'),
                 abstract_arg('max delay ms'),
+                abstract_arg('retry to original exchange'),
             ])
 
         // rate limiter

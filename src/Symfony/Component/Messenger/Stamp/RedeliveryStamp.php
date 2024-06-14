@@ -20,11 +20,13 @@ final class RedeliveryStamp implements StampInterface
 {
     private int $retryCount;
     private \DateTimeInterface $redeliveredAt;
+    private bool $retryToOriginalExchange;
 
-    public function __construct(int $retryCount, ?\DateTimeInterface $redeliveredAt = null)
+    public function __construct(int $retryCount, ?\DateTimeInterface $redeliveredAt = null, bool $retryToOriginalExchange = false)
     {
         $this->retryCount = $retryCount;
         $this->redeliveredAt = $redeliveredAt ?? new \DateTimeImmutable();
+        $this->retryToOriginalExchange = $retryToOriginalExchange;
     }
 
     public static function getRetryCountFromEnvelope(Envelope $envelope): int
@@ -43,5 +45,13 @@ final class RedeliveryStamp implements StampInterface
     public function getRedeliveredAt(): \DateTimeInterface
     {
         return $this->redeliveredAt;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isRetryToOriginalExchange(): bool
+    {
+        return $this->retryToOriginalExchange;
     }
 }

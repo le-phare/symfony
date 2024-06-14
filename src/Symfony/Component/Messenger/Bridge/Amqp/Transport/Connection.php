@@ -318,9 +318,11 @@ class Connection
     private function publishWithDelay(string $body, array $headers, int $delay, ?AmqpStamp $amqpStamp = null): void
     {
         $routingKey = $this->getRoutingKeyForMessage($amqpStamp);
+        // TODO: clean this dump
+        // dump($routingKey);
         $isRetryAttempt = $amqpStamp ? $amqpStamp->isRetryAttempt() : false;
 
-        $this->setupDelay($delay, $routingKey, $isRetryAttempt);
+        $this->setupDelay($delay, $routingKey, $isRetryAttempt, $amqpStamp->getDeadLetterExchange());
 
         $this->publishOnExchange(
             $this->getDelayExchange(),
@@ -352,13 +354,13 @@ class Connection
         }
     }
 
-    private function setupDelay(int $delay, ?string $routingKey, bool $isRetryAttempt): void
+    private function setupDelay(int $delay, ?string $routingKey, bool $isRetryAttempt, ?string $deadLetterExchange = null): void
     {
         if ($this->autoSetupDelayExchange) {
             $this->setupDelayExchange();
         }
 
-        $queue = $this->createDelayQueue($delay, $routingKey, $isRetryAttempt);
+        $queue = $this->createDelayQueue($delay, $routingKey, $isRetryAttempt, $deadLetterExchange);
         $queue->declareQueue(); // the delay queue always need to be declared because the name is dynamic and cannot be declared in advance
         $queue->bind($this->connectionOptions['delay']['exchange_name'], $this->getRoutingKeyForDelay($delay, $routingKey, $isRetryAttempt));
     }
@@ -384,7 +386,7 @@ class Connection
      * which is the original exchange, resulting on it being put back into
      * the original queue.
      */
-    private function createDelayQueue(int $delay, ?string $routingKey, bool $isRetryAttempt): \AMQPQueue
+    private function createDelayQueue(int $delay, ?string $routingKey, bool $isRetryAttempt, ?string $deadLetterExchange = null): \AMQPQueue
     {
         $queue = $this->amqpFactory->createQueue($this->channel());
         $queue->setName($this->getRoutingKeyForDelay($delay, $routingKey, $isRetryAttempt));
@@ -396,7 +398,7 @@ class Connection
             'x-expires' => $delay + 10000,
             // message should be broadcast to all consumers during delay, but to only one queue during retry
             // empty name is default direct exchange
-            'x-dead-letter-exchange' => $isRetryAttempt ? '' : $this->exchangeOptions['name'],
+            'x-dead-letter-exchange' => $isRetryAttempt && !$deadLetterExchange ? '' : $this->exchangeOptions['name'],
             // after being released from to DLX, make sure the original routing key will be used
             // we must use an empty string instead of null for the argument to be picked up
             'x-dead-letter-routing-key' => $routingKey ?? '',
@@ -571,6 +573,8 @@ class Connection
 
     private function getRoutingKeyForMessage(?AmqpStamp $amqpStamp): ?string
     {
+        // TODO: clean this dump
+        // dump($amqpStamp, 'defulatPublishRoutingKey', $this->getDefaultPublishRoutingKey());
         return $amqpStamp?->getRoutingKey() ?? $this->getDefaultPublishRoutingKey();
     }
 

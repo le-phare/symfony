@@ -74,8 +74,11 @@ class SendFailedMessageForRetryListener implements EventSubscriberInterface
 
             $this->logger?->warning('Error thrown while handling message {class}. Sending for retry #{retryCount} using {delay} ms delay. Error: "{error}"', $context + ['retryCount' => $retryCount, 'delay' => $delay, 'error' => $throwable->getMessage(), 'exception' => $throwable]);
 
+            $retryToOriginalExchange = $retryStrategy->isRetryToOriginalExchange();
+            // dump($retryToOriginalExchange);
+            // die();
             // add the delay and retry stamp info
-            $retryEnvelope = $this->withLimitedHistory($envelope, new DelayStamp($delay), new RedeliveryStamp($retryCount));
+            $retryEnvelope = $this->withLimitedHistory($envelope, new DelayStamp($delay), new RedeliveryStamp($retryCount, null, $retryToOriginalExchange));
 
             // re-send the message for retry
             $this->getSenderForTransport($event->getReceiverName())->send($retryEnvelope);

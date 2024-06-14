@@ -56,10 +56,18 @@ class AmqpSender implements SenderInterface
 
         $amqpReceivedStamp = $envelope->last(AmqpReceivedStamp::class);
         if ($amqpReceivedStamp instanceof AmqpReceivedStamp) {
+            $retryRoutingKey = null;
+            if ($envelope->last(RedeliveryStamp::class)) {
+
+                // dump($envelope->last(RedeliveryStamp::class));
+                $retryRoutingKey = $envelope->last(RedeliveryStamp::class)->isRetryToOriginalExchange() ? $amqpReceivedStamp->getAmqpEnvelope()->getRoutingKey() : $amqpReceivedStamp->getQueueName();
+            }
             $amqpStamp = AmqpStamp::createFromAmqpEnvelope(
                 $amqpReceivedStamp->getAmqpEnvelope(),
                 $amqpStamp,
-                $envelope->last(RedeliveryStamp::class) ? $amqpReceivedStamp->getQueueName() : null
+                // TODO:
+                $retryRoutingKey,
+                $deadLetterExchange = $amqpReceivedStamp->getAmqpEnvelope()->getExchangeName(),
             );
         }
 
